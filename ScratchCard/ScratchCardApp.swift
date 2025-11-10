@@ -12,6 +12,9 @@ struct ScratchCardApp: App {
     var body: some Scene {
         WindowGroup {
             MainScreenView()
+                .font(.headline)
+                .buttonStyle(.borderedProminent)
+                .buttonBorderShape(.roundedRectangle)
         }
     }
 }

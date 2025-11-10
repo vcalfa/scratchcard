@@ -8,11 +8,42 @@
 import SwiftUI
 
 struct ScratchCard: View {
+    
+    @ObservedObject private var viewModel: ScratchCardViewModel
+    
+    init(state: CardState?) {
+        _viewModel = ObservedObject(wrappedValue: ScratchCardViewModel(state: state))
+    }
+
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        ZStack {
+            RoundedRectangle(cornerRadius: 16)
+                .fill(viewModel.backgroundColor)
+                
+                .shadow(radius: 5)
+            
+            VStack {
+                Text(viewModel.text)
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .multilineTextAlignment(.center)
+                    .foregroundColor(.primary)
+                    .animation(.easeInOut, value: viewModel.backgroundColor)
+            }
+        }
+        .frame(width: 250, height: 350)
+        .padding()
     }
 }
 
 #Preview {
-    ScratchCard()
+    ScratchCard(state: .unscratched)
+}
+
+#Preview {
+    ScratchCard(state: .scratched("123"))
+}
+
+#Preview {
+    ScratchCard(state: .activated)
 }
