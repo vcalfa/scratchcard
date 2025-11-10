@@ -7,7 +7,7 @@
 
 import Foundation
 
-public enum ScratchCardState: Equatable {
+public enum ScratchCardState: Equatable, Sendable {
     case unscratched
     case scratched
     case activated
@@ -21,7 +21,7 @@ extension ScratchCardState {
         case .scratched:
             return .activated
         case .activated:
-            return nil
+            return .activated
         }
     }
 }

@@ -10,9 +10,9 @@ import Foundation
 public protocol ScratchCardServiceProtocol {
     associatedtype T: ScratchCodeProtocol
     
-    func getScratchCard() async -> ScratchCard<T>
+    func getScratchCard() -> ScratchCard<T>
     
-    func scratchCard(_ card: consuming ScratchCard<T>) async throws -> ScratchCard<T>
+    func scratch(_ card: inout ScratchCard<T>) async throws
     
-    func activateCard(_ card: consuming ScratchCard<T>) async throws -> ScratchCard<T>
+    func activate(_ card: inout ScratchCard<T>) async throws
 }

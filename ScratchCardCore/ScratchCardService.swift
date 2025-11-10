@@ -12,45 +12,66 @@ enum ScratchCardError: Error {
     case incorrectScratchCardState
 }
 
-//@Observable
-public struct ScratchCardService<T: ScratchCodeProtocol, Generator: CodeGeneratorProtocol>: ScratchCardServiceProtocol where Generator.T == T {
+public struct ScratchCardService<T: ScratchCodeProtocol & Sendable, Generator: CodeGeneratorProtocol>:  ScratchCardServiceProtocol where Generator.T == T {
     
     let apiService: any APIServiceProtocol
     let codeGenerator: Generator
     
-    public init (codeGenerator: Generator, apiService: any APIServiceProtocol) {
+    public init(codeGenerator: Generator, apiService: any APIServiceProtocol) {
         self.apiService = apiService
         self.codeGenerator = codeGenerator
     }
     
-    public func getScratchCard() async -> ScratchCard<T>  {
+    public func getScratchCard() -> ScratchCard<T>  {
         return .init(generator: codeGenerator)
     }
     
-    public func scratchCard(_ card: consuming ScratchCard<T>) async throws -> ScratchCard<T> {
-        try await Task.sleep(nanoseconds: .random(in: 500_000_000...2_000_000_000))
-        
-        if Task.isCancelled {
-            return card
-        }
-        let card = try ScratchCard(scratchCard: card)
-        return card
-    }
-    
-    public func activateCard(_ card: consuming ScratchCard<T>) async throws -> ScratchCard<T> {
-        
-        guard let code = card.activationCode?.code else {
+    public func scratch(_ card: inout ScratchCard<T>) async throws {
+        let newCard = card
+
+        guard newCard.state == .unscratched else {
+            card = newCard
             throw ScratchCardError.invalidState
         }
         
-        let activated = try await apiService.activateScratchCard(code: code)
-        
-        try await Task.sleep(nanoseconds: .random(in: 500_000_000...2_000_000_000))
-
-        if activated {
-            return try ScratchCard(activateCard: card)
+        do {
+            try await Task.sleep(nanoseconds: .random(in: 1_000_000_000...3_000_000_000))
+        } catch {
+            card = newCard
+            throw error
         }
         
-        return card
+        if Task.isCancelled {
+            card = newCard
+            return
+        }
+        
+        card = newCard.scratch()
+    }
+    
+    public func activate(_ card: inout ScratchCard<T>) async throws {
+        let newCard = card
+        guard newCard.state == .scratched,
+              let code = newCard.activationCode?.code
+        else {
+            card = newCard
+            throw ScratchCardError.invalidState
+        }
+
+        do {
+            let activated = try await apiService.activateScratchCard(code: code)
+            
+            try await Task.sleep(nanoseconds: .random(in: 500_000_000...2_000_000_000))
+            
+            guard activated else {
+                card = newCard
+                return
+            }
+            
+            card = newCard.activate()
+        } catch {
+            card = newCard
+            throw error
+        }
     }
 }

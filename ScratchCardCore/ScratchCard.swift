@@ -7,9 +7,9 @@
 
 import Foundation
 
-public struct ScratchCard<T: ScratchCodeProtocol>: ~Copyable {
+public struct ScratchCard<T: ScratchCodeProtocol>: ~Copyable, @unchecked Sendable {
     let id: UUID
-    let state: ScratchCardState
+    public let state: ScratchCardState
     private let code: T
     
     internal init(code: T) {
@@ -18,22 +18,24 @@ public struct ScratchCard<T: ScratchCodeProtocol>: ~Copyable {
         state = .unscratched
     }
     
-    internal init(scratchCard: consuming ScratchCard) throws {
-        id = scratchCard.id
-        code = scratchCard.code
-        guard let state = scratchCard.state.nextState(), state == .scratched else {
-            throw ScratchCardError.invalidState
-        }
+    internal init(id: UUID, code: T, state: ScratchCardState) {
+        self.id = id
+        self.code = code
         self.state = state
     }
     
-    internal init(activateCard: consuming ScratchCard) throws {
-        id = activateCard.id
-        code = activateCard.code
-        guard let state = activateCard.state.nextState(), state == .activated else {
-            throw ScratchCardError.invalidState
+    consuming public func scratch() -> Self {
+        guard let state = state.nextState(), state == .scratched else {
+            return .init(id: id, code: code, state: state)
         }
-        self.state = state
+        return .init(id: id, code: code, state: state)
+    }
+    
+    consuming public func activate() -> Self {
+        guard let state = state.nextState(), state == .activated else {
+            return .init(id: id, code: code, state: state)
+        }
+        return .init(id: id, code: code, state: state)
     }
     
     public var activationCode: T? {
@@ -43,7 +45,7 @@ public struct ScratchCard<T: ScratchCodeProtocol>: ~Copyable {
         case .scratched:
             return code
         case .activated:
-            return code
+            return nil
         }
     }
 }
